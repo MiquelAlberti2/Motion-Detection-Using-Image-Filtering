@@ -1,5 +1,5 @@
 def threshold(value):
-    if value > .3: # Change threshold value
+    if value > .3: # Change threshold value here
         return 1
     else:
         return 0
