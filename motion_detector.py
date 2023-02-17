@@ -73,7 +73,7 @@ directory='RedChair'
 original_images = []
 
 for filename in os.listdir(directory):
-    original_images.append(iio.imread(uri=directory+filename))
+    original_images.append(iio.imread(uri=directory+'/'+filename))
 
 #####################
 # Convert images to black and white
