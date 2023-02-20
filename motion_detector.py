@@ -3,7 +3,7 @@ import imageio.v3 as iio # to read and write images
 import matplotlib.pyplot as plt
 import os
 
-def estimated_noise(images):
+def est_noise(images):
     #estimate the noise using the EST_NOISE procedure
 
     n=len(images)
@@ -31,7 +31,7 @@ def estimated_noise(images):
             estim_sigma[i,j] = (estim_sigma[i,j]/(n-1))**(1/2)
 
 
-    return np.mean(estim_sigma)
+    return np.mean(estim_mu), np.mean(estim_sigma)
 
 
 def threshold(value, th):
@@ -286,11 +286,14 @@ motionMasks = compute_temporal_derivatives(smoothedImages, filter)
 # Therefore, the resulting masks should be absolutely black
 # And we can use them to estimate the noise
 
-# we assume the noise to have 0 mean
-th = estimated_noise(motionMasks[:18]) #we cannot choose the 22 frames because 
+mu, sigma = est_noise(motionMasks[:18]) #we cannot choose the 22 frames because 
                                           #we discart the first frames due to the size of the filter
 
+th = mu + 2 * sigma 
+
+print('-----------------------------------------------------')
 print("Choosed threshold: "+str(th))
+print('-----------------------------------------------------')
 
 maskedImages = applyMasksToOriginalFrames(motionMasks, original_images, th)
 
