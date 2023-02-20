@@ -30,8 +30,7 @@ def est_noise(images):
 
             estim_sigma[i,j] = (estim_sigma[i,j]/(n-1))**(1/2)
 
-
-    return np.mean(estim_mu), np.mean(estim_sigma)
+    return np.mean(estim_sigma)
 
 
 def threshold(value, th):
@@ -39,7 +38,6 @@ def threshold(value, th):
         return 1
     else:
         return 0
-
 
 
 def rgb_to_gray(rgb):
@@ -50,12 +48,17 @@ def rgb_to_gray(rgb):
     return (1/255)*np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
 
 
+# Takes an image of mxn size with only greyscale values, and creating an image of the same size but with r, g, and b in
+# each pixel, where r/g/b all equal the grey value from the original image
 def padGreyscaleImageToRGBImage(greyImage):
     rgbImage = []
     for i in range(len(greyImage)):
         rgbImage.append([])
         for j in range(len(greyImage[0])):
-            rgbImage[i].append([greyImage[i][j], greyImage[i][j], greyImage[i][j]])
+            rgbImage[i].append([round(greyImage[i][j]), round(greyImage[i][j]), round(greyImage[i][j])])
+    output = np.array(rgbImage)
+    return output
+
 
 def apply_BOX_filter(img, dim):
 
@@ -210,7 +213,7 @@ def applyMasksToOriginalFrames(masks, frames, th):
 # Read all the images in the directory
 #####################
 
-directory='RedChair'
+directory = 'RedChair'
 original_images = []
 
 for filename in os.listdir(directory):
@@ -235,7 +238,7 @@ smoothing = input("Would you like to apply a smoothing filter? (no/gaussian/box3
 
 smoothedImages = []
 
-l = len(greyImages)
+numImages = len(greyImages)
 counter = 1
 
 match smoothing:
@@ -244,17 +247,17 @@ match smoothing:
     case "gaussian":
         std = float(input("Which standard deviation (sigma)?").lower())
         for img in greyImages:
-            print(f'Smoothing...({counter}/{l})')
+            print(f'Smoothing...({counter}/{numImages})')
             smoothedImages.append((apply_Gauss_filter(img, std)))
             counter += 1
     case "box3":
         for img in greyImages:
-            print(f'Smoothing...({counter}/{l})')
+            print(f'Smoothing...({counter}/{numImages})')
             smoothedImages.append((apply_BOX_filter(img, 3)))
             counter += 1
     case "box5":
         for img in greyImages:
-            print(f'Smoothing...({counter}/{l})')
+            print(f'Smoothing...({counter}/{numImages})')
             smoothedImages.append((apply_BOX_filter(img, 5)))
             counter += 1
     case _:
@@ -266,6 +269,8 @@ plt.gray()
 plt.imshow(smoothedImages[0])
 plt.show()
 
+# save an example of the smoothing (or not smoothing)
+iio.imwrite(uri="smoothed.png", image=padGreyscaleImageToRGBImage(smoothedImages[3]).astype(np.uint8))
 
 #####################
 # Compute temporal derivatives
@@ -279,6 +284,8 @@ match temporal:
     case "gaussian":
         std = float(input("Which standard deviation (sigma)?").lower())
         filter = compute_derivative_Gauss(std)
+    case _:
+        filter = [-0.5, 0, 0.5]
 
 motionMasks = compute_temporal_derivatives(smoothedImages, filter)
 
@@ -286,13 +293,13 @@ motionMasks = compute_temporal_derivatives(smoothedImages, filter)
 # Therefore, the resulting masks should be absolutely black
 # And we can use them to estimate the noise
 
-mu, sigma = est_noise(motionMasks[:18]) #we cannot choose the 22 frames because 
+mu, sigma = est_noise(motionMasks[:18]) #we cannot choose the 22 frames because
                                           #we discart the first frames due to the size of the filter
 
-th = mu + 2 * sigma 
+th = mu + 2 * sigma
 
 print('-----------------------------------------------------')
-print("Choosed threshold: "+str(th))
+print("Chosen threshold: "+str(th))
 print('-----------------------------------------------------')
 
 maskedImages = applyMasksToOriginalFrames(motionMasks, original_images, th)
