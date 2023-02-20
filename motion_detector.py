@@ -38,7 +38,8 @@ def apply_BOX_filter(img, dim):
 
     return filt_img
 
-def compute_Gauss_filter(std):
+def size_gaussian_mask(std):
+
     size=5*std
 
     # the number should be integer
@@ -50,6 +51,12 @@ def compute_Gauss_filter(std):
         size+=1
 
     size = int(size)
+
+    return size, int(size/2)
+    
+def compute_Gauss_filter(std):
+    
+    size, half_s = size_gaussian_mask(std)
 
     mask = np.zeros((size,size))
 
@@ -66,7 +73,6 @@ def compute_Gauss_filter(std):
     d_mask = (1/(k**(1/2)))*mask[0]
 
     return d_mask, half_s
-
 
 
 def apply_Gauss_filter(img,std):
@@ -101,9 +107,16 @@ def apply_Gauss_filter(img,std):
 
     return filt_img
 
+
 def compute_derivative_Gauss(std):
-    # TODO
-    pass
+
+    size, half_s = size_gaussian_mask(std)
+    
+    dg = np.zeros(size)
+    for i in range(-half_s, half_s + 1):
+        dg[i + half_s] = -(i/std**2)*np.exp(-(i**2)/(2*std**2))
+
+    return dg
 
 def compute_temporal_derivatives(all_images, filter, modifier=1.0):
     # The function takes as input the array of smoothed images
@@ -187,12 +200,9 @@ match smoothing:
 
 # check smoothing results:
 
-# plt.imshow(smoothed_BOX_images_3_dim[0])
-# plt.show()
-# plt.imshow(smoothed_BOX_images_5_dim[0])
-# plt.show()
-# plt.imshow(smoothedImages[0])
-# plt.show()
+plt.gray()
+plt.imshow(smoothedImages[0])
+plt.show()
 
 
 #####################
