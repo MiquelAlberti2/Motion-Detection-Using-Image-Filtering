@@ -156,15 +156,20 @@ def compute_temporal_derivatives(all_images, filter, modifier=1.0):
 
 
 def applyMasksToOriginalFrames(masks, frames):
+    # suppose all images have the same size
+    nrow=frames[0].shape[0]
+    ncol=frames[0].shape[1]
+
     output = []
+    offset = int((len(frames)-len(masks))/2)
 
     for imageNum in range(len(masks)):  # For each image
         print(f"Applying masks to original frames...({imageNum+1}/{len(masks)})")
         maskedImage = []
-        for row in range(240):
+        for row in range(nrow):
             maskedImage.append([])
-            for col in range(320):
-                maskedImage[row].append(np.array(frames[imageNum][row][col])*masks[imageNum][row][col])
+            for col in range(ncol):
+                maskedImage[row].append(np.array(frames[imageNum+offset][row][col])*masks[imageNum][row][col])
         output.append(np.array(maskedImage))
     return output
 
