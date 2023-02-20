@@ -4,18 +4,19 @@ import matplotlib.pyplot as plt
 import os
 
 
-
 def threshold(value):
-    if value > .3: # Change threshold value here
+    if value > .3:  # Change threshold value here
         return 1
     else:
         return 0
+
 
 def rgb_to_gray(rgb):
 
     # compute a weighted average of RGB colors to obtain a greyscale value
     # weights correspond to the luminosity of each color channel
     return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
+
 
 def apply_BOX_filter(img, dim):
 
@@ -35,8 +36,8 @@ def apply_BOX_filter(img, dim):
         for j in range(pad_size, ncol + pad_size):
                 filt_img[i-pad_size,j-pad_size] = (kernel*pad_image[i-pad_size:i+pad_size+1, j-pad_size:j+pad_size+1]).sum()
 
-
     return filt_img
+
 
 def apply_Gauss_filter(img):
 
@@ -75,28 +76,21 @@ def apply_Gauss_filter(img):
     return filt_img
 
 
-def compute_temporal_derivatives(all_images):
+def compute_temporal_derivatives(all_images, filter, modifier=1):
     # The function takes as input the array of smoothed images
 
-    for i in range(0,len(all_images),3):
-        trio_images = [all_images[i], all_images[i+1], all_images[i+2]]
+    for count in range(0, len(all_images) - 1):
+        trio_images = [all_images[count], all_images[count+1], all_images[count+2]]
 
-        """ There's no need for this now
-        images = [] # array of 3 images, each 320x240
-        for i in range(1,1069):
-            with open('Office/image01_'+str(i).zfill(4)+'.jpg', 'rb') as f:
-                images.append(f.read())
-            with open('Office/image01_'+str(i+1).zfill(4)+'.jpg', 'rb') as f:
-                images.append(f.read())
-            with open('Office/image01_'+str(i+2).zfill(4)+'.jpg', 'rb') as f:
-                images.append(f.read())
-        """
-        mask = [] # new image of size 320x240
+        mask = []  # new image of size 320x240
         for row in range(320):
             mask.append([])
             for col in range(240):
-                mask[row].append(threshold(.5*(-1*trio_images[0][row][col] + 1*trio_images[2][row][col])))
-        maskedImage = [] # new image of size 320x240
+                value = 0
+                for location in range(3):
+                    value += filter[location]*trio_images[location][row][col]
+                mask[row].append(threshold(value*modifier))
+        maskedImage = []  # new image of size 320x240
         for row in range(320):
             maskedImage.append([])
             for col in range(240):
@@ -111,6 +105,7 @@ directory='RedChair'
 original_images = []
 
 for filename in os.listdir(directory):
+    print("Reading image "+filename)
     original_images.append(iio.imread(uri=directory+'/'+filename))
 
 #####################
@@ -118,27 +113,29 @@ for filename in os.listdir(directory):
 #####################
 
 for i in range(len(original_images)):
+    print("Greyscaling image "+str(i))
     original_images[i] = rgb_to_gray(original_images[i])
 
 #####################
 # Apply a smoothing filter to all images
 #####################
 
-smoothed_BOX_images_3_dim = []
+smoothing = input("Would you like to apply a smoothing filter? (no/gaussian/box3/box5)").lower()
 
-for img in original_images:
-    smoothed_BOX_images_3_dim.append(apply_BOX_filter(img, 3))
+smoothedImages = []
 
-smoothed_BOX_images_5_dim = []
-
-for img in original_images:
-    smoothed_BOX_images_5_dim.append(apply_BOX_filter(img, 5))
-
-smoothed_Gauss_images = []
-
-for img in original_images:
-    smoothed_Gauss_images.append(apply_Gauss_filter(img))
-
+match smoothing:
+    case "no":
+        smoothedImages = original_images
+    case "gaussian":
+        for img in original_images:
+            smoothedImages.append((apply_Gauss_filter(img)))
+    case "box3":
+        for img in original_images:
+            smoothedImages.append((apply_BOX_filter(img, 3)))
+    case "box5":
+        for img in original_images:
+            smoothedImages.append((apply_BOX_filter(img, 5)))
 
 # check smoothing results:
 
@@ -157,7 +154,7 @@ for img in original_images:
 #compute_temporal_derivatives(smoothed_images) # TODO think of what should the function return
 
 
-
-#iio.imwrite(uri="name1.png", image=smoothed_BOX_images[0])
-#iio.imwrite(uri="name2.png", image=smoothed_Gauss_images[0])
+# This doesn't work, I'm trying to figure out the error
+iio.imwrite(uri="name1.png", image=smoothedImages[0])
+iio.imwrite(uri="name2.png", image=smoothedImages[1])
 
