@@ -101,6 +101,9 @@ def apply_Gauss_filter(img,std):
 
     return filt_img
 
+def compute_derivative_Gauss(std):
+    # TODO
+    pass
 
 def compute_temporal_derivatives(all_images, filter, modifier=1.0):
     # The function takes as input the array of smoothed images
@@ -196,9 +199,16 @@ match smoothing:
 # Compute temporal derivatives
 #####################
 
-temporal = input("Would you like to use a simple or gaussian filter?").lower()
-# have some logic here to compute the correct filter
-motionMasks = compute_temporal_derivatives(smoothedImages, [-1, 0, 1], .5)
+temporal = input("Would you like to use a simple or gaussian filter? (simple/gaussian)").lower()
+
+match temporal:
+    case "simple":
+        filter = [-1, 0, 1]
+    case "gaussian":
+        std = float(input("Which standard deviation (sigma)?").lower())
+        filter = compute_derivative_Gauss(std)
+
+motionMasks = compute_temporal_derivatives(smoothedImages, filter, .5)
 maskedImages = applyMaskToOriginalFrame(motionMasks, original_images)
 
 # This doesn't work, I'm trying to figure out the error
