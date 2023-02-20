@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import os
 
 
+
 def threshold(value):
     if value > .3: # Change threshold value here
         return 1
@@ -11,9 +12,16 @@ def threshold(value):
         return 0
 
 def rgb_to_gray(rgb):
+
+    # compute a weighted average of RGB colors to obtain a greyscale value
+    # weights correspond to the luminosity of each color channel
     return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
 
-def apply_filter(kernel, img):
+def apply_BOX_filter(img):
+
+    # create a kernel for a 3x3 BOX filter
+    kernel = np.zeros((3,3))
+    kernel.fill(1./9)
 
     nrow=img.shape[0]
     ncol=img.shape[1]
@@ -28,13 +36,41 @@ def apply_filter(kernel, img):
 
     return filt_img
 
-def apply_BOX_filter(img):
+def apply_Gauss_filter(img):
 
-    # create a kernel for a 3x3 BOX filter
-    kernel = np.zeros((3,3))
-    kernel.fill(1./9)
+    #create a kernel for a separated gaussian filter
+    kernel=np.array([1,4,8,10,8,4,1])
+    kernel=(1/36)*kernel
 
-    return apply_filter(kernel,img)
+    nrow=img.shape[0]
+    ncol=img.shape[1]
+
+    # add a padding to the orignal image
+    padding_size = 3
+
+    # create a "horizontal" 0 padding
+    padded_image = np.pad(img, ((0, 0), (padding_size, padding_size)), mode='constant')
+
+    
+    vertical_filt_img = np.zeros_like(img)
+
+    # apply the horizontal filter
+    for i in range(nrow):
+        for j in range(padding_size, ncol + padding_size):
+                vertical_filt_img[i,j-padding_size] = (kernel*padded_image[i, j-padding_size:j+padding_size+1]).sum()
+
+
+    # create a "vertical" 0 padding
+    vertical_filt_img = np.pad(vertical_filt_img, ((padding_size, padding_size), (0, 0)), mode='constant')
+    
+    filt_img = np.zeros_like(img)
+
+    # apply the vertical filter
+    for i in range(padding_size, nrow + padding_size):
+        for j in range(ncol):
+                filt_img[i-padding_size,j] = (kernel*vertical_filt_img[i-padding_size:i+padding_size+1, j]).sum()
+
+    return filt_img
 
 
 def compute_temporal_derivatives(all_images):
@@ -86,18 +122,31 @@ for i in range(len(original_images)):
 # Apply a smoothing filter to all images
 #####################
 
-smoothed_images = []
+smoothed_BOX_images = []
 
 for img in original_images:
-    smoothed_images.append(apply_BOX_filter(img))
+    smoothed_BOX_images.append(apply_BOX_filter(img))
+
+smoothed_Gauss_images = []
+
+for img in original_images:
+    smoothed_Gauss_images.append(apply_Gauss_filter(img))
+
+# check smoothing results:
+# plt.imshow(smoothed_BOX_images[0])
+# plt.show()
+# plt.imshow(smoothed_Gauss_images[0])
+# plt.show()
+
 
 #####################
 # Compute temporal derivatives
 #####################
 
-compute_temporal_derivatives(smoothed_images) # TODO think of what should the function return
+#compute_temporal_derivatives(smoothed_images) # TODO think of what should the function return
 
 
 
-# plt.imshow(image)
-# iio.imwrite(uri="ws.bmp", image=image)
+#iio.imwrite(uri="name1.png", image=smoothed_BOX_images[0])
+#iio.imwrite(uri="name2.png", image=smoothed_Gauss_images[0])
+
