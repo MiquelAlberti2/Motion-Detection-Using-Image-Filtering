@@ -62,8 +62,8 @@ def compute_Gauss_filter(std):
     # Factor to normalize the mask
     k = np.sum(mask)
 
-    # to get the separable filter, as it is symmetric, we can just normalize the row where i=0
-    d_mask = (1/(k**(1/2)))*mask[half_s]
+    # to get the separable filter, we just take the first row
+    d_mask = (1/(k**(1/2)))*mask[0]
 
     return d_mask, half_s
 
