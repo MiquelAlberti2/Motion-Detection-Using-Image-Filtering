@@ -126,18 +126,30 @@ def compute_derivative_Gauss(std):
     return dg
 
 def compute_temporal_derivatives(all_images, filter, modifier=1.0):
+    l = len(filter)
+
+    # suppose all images have the same size
+    nrow=all_images[0].shape[0]
+    ncol=all_images[0].shape[1]
+
     # The function takes as input the array of smoothed images
     output = []
-    for count in range(0, len(all_images) - 2):
-        trio_images = [all_images[count], all_images[count+1], all_images[count+2]]
+    
+    n_output_frames = len(all_images) -l-1
+    for count in range(0, n_output_frames):
+        print(f"Computing derivatives...({count+1}/{n_output_frames})")
+        
+        compared_images=[]
+        for i in range(l):
+            compared_images.append(all_images[count+i])
 
-        mask = []  # new image of size 320x240
-        for row in range(240):
+        mask = []  # new image
+        for row in range(nrow):
             mask.append([])
-            for col in range(320):
+            for col in range(ncol):
                 value = 0
-                for location in range(3):
-                    value += filter[location]*trio_images[location][row][col]
+                for location in range(l):
+                    value += filter[location]*compared_images[location][row][col]
                 mask[row].append(threshold(value*modifier))
         output.append(mask)
     return output
@@ -145,7 +157,9 @@ def compute_temporal_derivatives(all_images, filter, modifier=1.0):
 
 def applyMasksToOriginalFrames(masks, frames):
     output = []
+
     for imageNum in range(len(masks)):  # For each image
+        print(f"Applying masks to original frames...({imageNum+1}/{len(masks)})")
         maskedImage = []
         for row in range(240):
             maskedImage.append([])
@@ -224,18 +238,19 @@ temporal = input("Would you like to use a simple or gaussian filter? (simple/gau
 
 match temporal:
     case "simple":
-        filter = [-1, 0, 1]
+        filter = [-0.5, 0, 0.5]
     case "gaussian":
         std = float(input("Which standard deviation (sigma)?").lower())
         filter = compute_derivative_Gauss(std)
 
-motionMasks = compute_temporal_derivatives(smoothedImages, filter, .5)
+motionMasks = compute_temporal_derivatives(smoothedImages, filter)
 maskedImages = applyMasksToOriginalFrames(motionMasks, original_images)
 
 #####################
 # Output final images
 #####################
 for image in range(len(maskedImages)):
+    print(f"Saving images in disk...({image+1}/{len(maskedImages)})")
     filePath = "output/name" + str(image) + ".png"
     iio.imwrite(uri=filePath, image=maskedImages[image])
 
