@@ -18,6 +18,13 @@ def rgb_to_gray(rgb):
     return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
 
 
+def padGreyscaleImageToRGBImage(greyImage):
+    rgbImage = []
+    for i in range(len(greyImage)):
+        rgbImage.append([])
+        for j in range(len(greyImage[0])):
+            rgbImage[i].append([greyImage[i][j], greyImage[i][j], greyImage[i][j]])
+
 def apply_BOX_filter(img, dim):
 
     # create a kernel for a "dim" x "dim" BOX filter
@@ -108,13 +115,13 @@ def compute_derivative_Gauss(std):
 def compute_temporal_derivatives(all_images, filter, modifier=1.0):
     # The function takes as input the array of smoothed images
     output = []
-    for count in range(0, len(all_images) - 1):
+    for count in range(0, len(all_images) - 2):
         trio_images = [all_images[count], all_images[count+1], all_images[count+2]]
 
         mask = []  # new image of size 320x240
-        for row in range(320):
+        for row in range(240):
             mask.append([])
-            for col in range(240):
+            for col in range(320):
                 value = 0
                 for location in range(3):
                     value += filter[location]*trio_images[location][row][col]
@@ -123,15 +130,15 @@ def compute_temporal_derivatives(all_images, filter, modifier=1.0):
     return output
 
 
-def applyMaskToOriginalFrame(masks, frames):
+def applyMasksToOriginalFrames(masks, frames):
     output = []
-    for imageNum in range(len(masks)):
+    for imageNum in range(len(masks)):  # For each image
         maskedImage = []
-        for row in range(320):
+        for row in range(240):
             maskedImage.append([])
-            for col in range(240):
-                maskedImage[row].append(frames[imageNum][row][col]*masks[imageNum][row][col])
-        output.append(maskedImage)
+            for col in range(320):
+                maskedImage[row].append(np.array(frames[imageNum][row][col])*masks[imageNum][row][col])
+        output.append(np.array(maskedImage))
     return output
 
 
@@ -150,9 +157,11 @@ for filename in os.listdir(directory):
 # Convert images to black and white
 #####################
 
+greyImages = []
+
 for i in range(len(original_images)):
     print("Greyscaling image "+str(i))
-    original_images[i] = rgb_to_gray(original_images[i])
+    greyImages.append(rgb_to_gray(original_images[i]))
 
 #####################
 # Apply a smoothing filter to all images
@@ -162,33 +171,35 @@ smoothing = input("Would you like to apply a smoothing filter? (no/gaussian/box3
 
 smoothedImages = []
 
-l = len(original_images)
+l = len(greyImages)
 counter = 1
 
 match smoothing:
     case "no":
-        smoothedImages = original_images
+        smoothedImages = greyImages
     case "gaussian":
         std = float(input("Which standard deviation (sigma)?").lower())
-        for img in original_images:
+        for img in greyImages:
             print(f'Smoothing...({counter}/{l})')
             smoothedImages.append((apply_Gauss_filter(img, std)))
-            counter+=1
+            counter += 1
     case "box3":
-        for img in original_images:
+        for img in greyImages:
             print(f'Smoothing...({counter}/{l})')
             smoothedImages.append((apply_BOX_filter(img, 3)))
-            counter+=1
+            counter += 1
     case "box5":
-        for img in original_images:
+        for img in greyImages:
             print(f'Smoothing...({counter}/{l})')
             smoothedImages.append((apply_BOX_filter(img, 5)))
-            counter+=1
+            counter += 1
+    case _:
+        smoothedImages = greyImages
 
 # check smoothing results:
 
-# plt.imshow(smoothed_BOX_images_3_dim[0])
-# plt.show()
+#plt.imshow(smoothedImages[0])
+#plt.show()
 # plt.imshow(smoothed_BOX_images_5_dim[0])
 # plt.show()
 # plt.imshow(smoothedImages[0])
@@ -209,9 +220,12 @@ match temporal:
         filter = compute_derivative_Gauss(std)
 
 motionMasks = compute_temporal_derivatives(smoothedImages, filter, .5)
-maskedImages = applyMaskToOriginalFrame(motionMasks, original_images)
+maskedImages = applyMasksToOriginalFrames(motionMasks, original_images)
 
-# This doesn't work, I'm trying to figure out the error
-iio.imwrite(uri="name1.png", image=smoothedImages[0])
-iio.imwrite(uri="name2.png", image=smoothedImages[1])
+#####################
+# Output final images
+#####################
+for image in range(len(maskedImages)):
+    filePath = "output/name" + str(image) + ".png"
+    iio.imwrite(uri=filePath, image=maskedImages[image])
 
