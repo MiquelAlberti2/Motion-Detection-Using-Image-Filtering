@@ -17,21 +17,23 @@ def rgb_to_gray(rgb):
     # weights correspond to the luminosity of each color channel
     return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
 
-def apply_BOX_filter(img):
+def apply_BOX_filter(img, dim):
 
-    # create a kernel for a 3x3 BOX filter
-    kernel = np.zeros((3,3))
-    kernel.fill(1./9)
+    # create a kernel for a "dim" x "dim" BOX filter
+    kernel = np.zeros((dim,dim))
+    kernel.fill(1./(dim*dim))
 
     nrow=img.shape[0]
     ncol=img.shape[1]
 
-    filt_img = np.zeros((nrow-2,ncol-2)) #ignore borders
+    filt_img = np.zeros_like(img)
 
-    for i in range(nrow):
-        for j in range(ncol):
-            if i>0 and i<nrow-1 and j>0 and j<ncol-1:
-                filt_img[i-1,j-1] = (kernel*img[i-1:i+2, j-1:j+2]).sum()
+    pad_size = int(dim/2)
+    pad_image = np.pad(img, pad_size, mode='constant')
+
+    for i in range(pad_size, nrow + pad_size):
+        for j in range(pad_size, ncol + pad_size):
+                filt_img[i-pad_size,j-pad_size] = (kernel*pad_image[i-pad_size:i+pad_size+1, j-pad_size:j+pad_size+1]).sum()
 
 
     return filt_img
@@ -122,20 +124,29 @@ for i in range(len(original_images)):
 # Apply a smoothing filter to all images
 #####################
 
-smoothed_BOX_images = []
+smoothed_BOX_images_3_dim = []
 
 for img in original_images:
-    smoothed_BOX_images.append(apply_BOX_filter(img))
+    smoothed_BOX_images_3_dim.append(apply_BOX_filter(img, 3))
+
+smoothed_BOX_images_5_dim = []
+
+for img in original_images:
+    smoothed_BOX_images_5_dim.append(apply_BOX_filter(img, 5))
 
 smoothed_Gauss_images = []
 
 for img in original_images:
     smoothed_Gauss_images.append(apply_Gauss_filter(img))
 
+
 # check smoothing results:
-# plt.imshow(smoothed_BOX_images[0])
+
+# plt.imshow(smoothed_BOX_images_3_dim[0])
 # plt.show()
-# plt.imshow(smoothed_Gauss_images[0])
+# plt.imshow(smoothed_BOX_images_5_dim[0])
+# plt.show()
+# plt.imshow(apply_Gauss_filter[0])
 # plt.show()
 
 
