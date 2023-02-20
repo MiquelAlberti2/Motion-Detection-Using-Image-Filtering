@@ -3,19 +3,51 @@ import imageio.v3 as iio # to read and write images
 import matplotlib.pyplot as plt
 import os
 
+def estimated_noise(images):
+    #estimate the noise using the EST_NOISE procedure
 
-def threshold(value):
-    if value > .3:  # Change threshold value here
+    n=len(images)
+
+    for i in range(n):
+        images[i] = np.array(images[i])
+
+    dim=images[0].shape[0] #suppose its square
+
+    # Use the procedure EST_NOISE to estimate the noise
+    estim_mu = np.zeros((dim,dim))
+    estim_sigma = np.zeros((dim,dim))
+
+    for i in range(dim):
+        for j in range(dim):
+
+            for img in images:
+                estim_mu[i,j] += img[i,j]
+
+            estim_mu[i,j] /= n
+
+            for img in images:
+                estim_sigma[i,j] += (estim_mu[i,j] - img[i,j])**2
+
+            estim_sigma[i,j] = (estim_sigma[i,j]/(n-1))**(1/2)
+
+
+    return np.mean(estim_sigma)
+
+
+def threshold(value, th):
+    if value > th:  # Change threshold value here
         return 1
     else:
         return 0
+
 
 
 def rgb_to_gray(rgb):
 
     # compute a weighted average of RGB colors to obtain a greyscale value
     # weights correspond to the luminosity of each color channel
-    return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
+    # we also normalize the image
+    return (1/255)*np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
 
 
 def padGreyscaleImageToRGBImage(greyImage):
@@ -125,7 +157,7 @@ def compute_derivative_Gauss(std):
 
     return dg
 
-def compute_temporal_derivatives(all_images, filter, modifier=1.0):
+def compute_temporal_derivatives(all_images, filter):
     l = len(filter)
 
     # suppose all images have the same size
@@ -150,12 +182,12 @@ def compute_temporal_derivatives(all_images, filter, modifier=1.0):
                 value = 0
                 for location in range(l):
                     value += filter[location]*compared_images[location][row][col]
-                mask[row].append(threshold(value*modifier))
+                mask[row].append(value)
         output.append(mask)
     return output
 
 
-def applyMasksToOriginalFrames(masks, frames):
+def applyMasksToOriginalFrames(masks, frames, th):
     # suppose all images have the same size
     nrow=frames[0].shape[0]
     ncol=frames[0].shape[1]
@@ -169,7 +201,7 @@ def applyMasksToOriginalFrames(masks, frames):
         for row in range(nrow):
             maskedImage.append([])
             for col in range(ncol):
-                maskedImage[row].append(np.array(frames[imageNum+offset][row][col])*masks[imageNum][row][col])
+                maskedImage[row].append(np.array(frames[imageNum+offset][row][col])*threshold(masks[imageNum][row][col], th))
         output.append(np.array(maskedImage))
     return output
 
@@ -249,7 +281,18 @@ match temporal:
         filter = compute_derivative_Gauss(std)
 
 motionMasks = compute_temporal_derivatives(smoothedImages, filter)
-maskedImages = applyMasksToOriginalFrames(motionMasks, original_images)
+
+# For both directories, there is no motion in the first 22 frames
+# Therefore, the resulting masks should be absolutely black
+# And we can use them to estimate the noise
+
+# we assume the noise to have 0 mean
+th = estimated_noise(motionMasks[:18]) #we cannot choose the 22 frames because 
+                                          #we discart the first frames due to the size of the filter
+
+print("Choosed threshold: "+str(th))
+
+maskedImages = applyMasksToOriginalFrames(motionMasks, original_images, th)
 
 #####################
 # Output final images
@@ -258,4 +301,3 @@ for image in range(len(maskedImages)):
     print(f"Saving images in disk...({image+1}/{len(maskedImages)})")
     filePath = "output/name" + str(image) + ".png"
     iio.imwrite(uri=filePath, image=maskedImages[image])
-
