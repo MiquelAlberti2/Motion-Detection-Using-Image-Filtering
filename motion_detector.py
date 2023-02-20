@@ -76,9 +76,9 @@ def apply_Gauss_filter(img):
     return filt_img
 
 
-def compute_temporal_derivatives(all_images, filter, modifier=1):
+def compute_temporal_derivatives(all_images, filter, modifier=1.0):
     # The function takes as input the array of smoothed images
-
+    output = []
     for count in range(0, len(all_images) - 1):
         trio_images = [all_images[count], all_images[count+1], all_images[count+2]]
 
@@ -90,11 +90,20 @@ def compute_temporal_derivatives(all_images, filter, modifier=1):
                 for location in range(3):
                     value += filter[location]*trio_images[location][row][col]
                 mask[row].append(threshold(value*modifier))
-        maskedImage = []  # new image of size 320x240
+        output.append(mask)
+    return output
+
+
+def applyMaskToOriginalFrame(masks, frames):
+    output = []
+    for imageNum in range(len(masks)):
+        maskedImage = []
         for row in range(320):
             maskedImage.append([])
             for col in range(240):
-                maskedImage[row].append(trio_images[1][row][col]*mask[row][col])
+                maskedImage[row].append(frames[imageNum][row][col]*masks[imageNum][row][col])
+        output.append(maskedImage)
+    return output
 
 
 #####################
@@ -151,8 +160,10 @@ match smoothing:
 # Compute temporal derivatives
 #####################
 
-#compute_temporal_derivatives(smoothed_images) # TODO think of what should the function return
-
+temporal = input("Would you like to use a simple or gaussian filter?").lower()
+# have some logic here to compute the correct filter
+motionMasks = compute_temporal_derivatives(smoothedImages, [-1, 0, 1], .5)
+maskedImages = applyMaskToOriginalFrame(motionMasks, original_images)
 
 # This doesn't work, I'm trying to figure out the error
 iio.imwrite(uri="name1.png", image=smoothedImages[0])
