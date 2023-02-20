@@ -38,18 +38,44 @@ def apply_BOX_filter(img, dim):
 
     return filt_img
 
+def compute_Gauss_filter(std):
+    size=5*std
 
-def apply_Gauss_filter(img):
+    # the number should be integer
+    if not size.is_integer():
+        size=int(5*std) + 1
+        
+    # we want an odd size
+    if size%2==0:
+        size+=1
+
+    size = int(size)
+
+    mask = np.zeros((size,size))
+
+    half_s = int(size/2)
+
+    for i in range(-half_s,half_s+1):
+        for j in range(-half_s,half_s+1):
+            mask[i+half_s,j+half_s] = np.exp((-i*i - j*j)/(2*std*std))
+
+    # Factor to normalize the mask
+    k = np.sum(mask)
+
+    # to get the separable filter, as it is symmetric, we can just normalize the row where i=0
+    d_mask = (1/(k**(1/2)))*mask[half_s]
+
+    return d_mask, half_s
+
+
+
+def apply_Gauss_filter(img,std):
 
     #create a kernel for a separated gaussian filter
-    kernel=np.array([1,4,8,10,8,4,1])
-    kernel=(1/36)*kernel
+    kernel, padding_size = compute_Gauss_filter(std)
 
     nrow=img.shape[0]
     ncol=img.shape[1]
-
-    # add a padding to the orignal image
-    padding_size = 3
 
     # create a "horizontal" 0 padding
     padded_image = np.pad(img, ((0, 0), (padding_size, padding_size)), mode='constant')
@@ -133,18 +159,28 @@ smoothing = input("Would you like to apply a smoothing filter? (no/gaussian/box3
 
 smoothedImages = []
 
+l = len(original_images)
+counter = 1
+
 match smoothing:
     case "no":
         smoothedImages = original_images
     case "gaussian":
+        std = float(input("Which standard deviation (sigma)?").lower())
         for img in original_images:
-            smoothedImages.append((apply_Gauss_filter(img)))
+            print(f'Smoothing...({counter}/{l})')
+            smoothedImages.append((apply_Gauss_filter(img, std)))
+            counter+=1
     case "box3":
         for img in original_images:
+            print(f'Smoothing...({counter}/{l})')
             smoothedImages.append((apply_BOX_filter(img, 3)))
+            counter+=1
     case "box5":
         for img in original_images:
+            print(f'Smoothing...({counter}/{l})')
             smoothedImages.append((apply_BOX_filter(img, 5)))
+            counter+=1
 
 # check smoothing results:
 
@@ -152,7 +188,7 @@ match smoothing:
 # plt.show()
 # plt.imshow(smoothed_BOX_images_5_dim[0])
 # plt.show()
-# plt.imshow(apply_Gauss_filter[0])
+# plt.imshow(smoothedImages[0])
 # plt.show()
 
 
