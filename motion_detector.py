@@ -158,6 +158,7 @@ def compute_derivative_Gauss(std):
     for i in range(-half_s, half_s + 1):
         dg[i + half_s] = -(i/std**2)*np.exp(-(i**2)/(2*std**2))
 
+    dg = np.flip(dg)
     return dg
 
 def compute_temporal_derivatives(all_images, filter):
@@ -171,7 +172,7 @@ def compute_temporal_derivatives(all_images, filter):
     output = []
     
     n_output_frames = len(all_images) - l + 1
-    for count in range(0, n_output_frames):
+    for count in range(n_output_frames):
         print(f"Computing derivatives...({count+1}/{n_output_frames})")
         
         compared_images=[]
@@ -196,7 +197,11 @@ def applyMasksToOriginalFrames(masks, frames, th):
     ncol=frames[0].shape[1]
 
     output = []
-    offset = int((len(frames)-len(masks))/2)
+    offset = int((len(frames)-len(masks))/2)-1
+
+    print('------------------------------')
+    print(f'n frames: {len(frames)}, n masks = {len(masks)}, offset: {offset}')
+    print('------------------------------')
 
     for imageNum in range(len(masks)):  # For each image
         print(f"Applying masks to original frames...({imageNum+1}/{len(masks)})")
