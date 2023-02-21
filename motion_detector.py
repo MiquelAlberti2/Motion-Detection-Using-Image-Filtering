@@ -283,13 +283,13 @@ match temporal:
 motionMasks = compute_temporal_derivatives(smoothedImages, filter)
 
 # For both directories, there is no motion in the first 22 frames
-# Therefore, the resulting masks should be absolutely black
+# Therefore, the resulting motion masks should be absolutely black
 # And we can use them to estimate the noise
 
 mu, sigma = est_noise(motionMasks[:18]) #we cannot choose the 22 frames because 
-                                          #we discart the first frames due to the size of the filter
+                                        #we discard the first frames due to the size of the filter
 
-th = mu + 2 * sigma 
+th = mu + 3*sigma 
 
 print('-----------------------------------------------------')
 print("Choosed threshold: "+str(th))
