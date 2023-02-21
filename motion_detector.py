@@ -199,10 +199,6 @@ def applyMasksToOriginalFrames(masks, frames, th):
     output = []
     offset = int((len(frames)-len(masks))/2)-1
 
-    print('------------------------------')
-    print(f'n frames: {len(frames)}, n masks = {len(masks)}, offset: {offset}')
-    print('------------------------------')
-
     for imageNum in range(len(masks)):  # For each image
         print(f"Applying masks to original frames...({imageNum+1}/{len(masks)})")
         maskedImage = []
