@@ -170,7 +170,7 @@ def compute_temporal_derivatives(all_images, filter):
     # The function takes as input the array of smoothed images
     output = []
     
-    n_output_frames = len(all_images) -l-1
+    n_output_frames = len(all_images) - l + 1
     for count in range(0, n_output_frames):
         print(f"Computing derivatives...({count+1}/{n_output_frames})")
         
