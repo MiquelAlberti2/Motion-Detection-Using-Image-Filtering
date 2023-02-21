@@ -48,18 +48,6 @@ def rgb_to_gray(rgb):
     return (1/255)*np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
 
 
-# Takes an image of mxn size with only greyscale values, and creating an image of the same size but with r, g, and b in
-# each pixel, where r/g/b all equal the grey value from the original image
-def padGreyscaleImageToRGBImage(greyImage):
-    rgbImage = []
-    for i in range(len(greyImage)):
-        rgbImage.append([])
-        for j in range(len(greyImage[0])):
-            rgbImage[i].append([round(greyImage[i][j]), round(greyImage[i][j]), round(greyImage[i][j])])
-    output = np.array(rgbImage)
-    return output
-
-
 def apply_BOX_filter(img, dim):
 
     # create a kernel for a "dim" x "dim" BOX filter
@@ -269,9 +257,6 @@ match smoothing:
 plt.gray()
 plt.imshow(smoothedImages[0])
 plt.show()
-
-# save an example of the smoothing (or not smoothing)
-iio.imwrite(uri="smoothed.png", image=padGreyscaleImageToRGBImage(smoothedImages[3]).astype(np.uint8))
 
 #####################
 # Compute temporal derivatives
