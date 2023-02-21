@@ -1,3 +1,3 @@
 # Motion Detection Using Image Filtering
 
-[Report](Report.pdf)
+Read: [Report](Report.pdf).pdf
